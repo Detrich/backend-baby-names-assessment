@@ -45,14 +45,42 @@ def extract_names(filename):
     with the year string followed by the name-rank strings in alphabetical order.
     ['2006', 'Aaliyah 91', Aaron 57', 'Abagail 895', ' ...]
     """
-    names = []
+    boyNames = {}
+    girlNames = {}
+    names = set()
+    namesList = []
+    with open(filename) as f:
+        readFile = f.read()
+        findYear = re.findall(r'Popularity\sin\s(\d\d\d\d)', readFile)
+        findNames = re.compile(r'<td>(\d+)</td><td>(\w+)</td><td>(\w+)</td>')
+        namesOnly = findNames.findall(readFile)
+        for name in namesOnly:
+            maleNames = {name[1]: name[0]}
+            femaleNames = {name[2]: name[0]}
+            boyNames.update(maleNames)
+            girlNames.update(femaleNames)
+        for name in boyNames:
+            if name in girlNames:
+                if int(boyNames[name]) > int(girlNames[name]):
+                    names.add((name, girlNames[name]))
+                else:
+                    names.add((name, boyNames[name]))
+            else:
+                names.add((name, boyNames[name]))
+        for name in girlNames:
+            names.add((name, girlNames[name]))
+        sortedNames = sorted(names)
+        for name in sortedNames:
+            namesList.append(" ".join(name))
+        findYear += namesList
     # +++your code here+++
-    return names
+    return findYear
 
 
 def create_parser():
     """Create a cmd line parser object with 2 argument definitions"""
-    parser = argparse.ArgumentParser(description="Extracts and alphabetizes baby names from html.")
+    parser = argparse.ArgumentParser(
+        description="Extracts and alphabetizes baby names from html.")
     parser.add_argument(
         '--summaryfile', help='creates a summary file', action='store_true')
     # The nargs option instructs the parser to expect 1 or more filenames.
@@ -80,8 +108,16 @@ def main(args):
     # Format the resulting list a vertical list (separated by newline \n)
     # Use the create_summary flag to decide whether to print the list,
     # or to write the list to a summary file e.g. `baby1990.html.summary`
-
+    babyPages = re.compile(r'./baby\d{4}.+html$')
     # +++your code here+++
+    for file in file_list:
+        file = "./" + file
+        names = extract_names(file)
+        if babyPages.match(file):
+            print('\n'.join(names))
+        if create_summary is True:
+            with open(file+".summary", "w") as openFile:
+                openFile.write('\n'.join(names))
 
 
 if __name__ == '__main__':
